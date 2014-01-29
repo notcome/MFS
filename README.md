@@ -3,7 +3,7 @@
 ##Overview
 MFS.js is a simple persistent file manage system. It supports files and directories I/O. There is a log system used to keep track of file changes.
 
-The parameters of each opeartions are listed as following:
+As you may notice, it is written with Continuation.js. ``MFS.compiled.js`` is the compiled version.
 
 ##Usage
 This project hasn't been uploaded to ``npm``. You could download it and install locally.
@@ -29,7 +29,7 @@ Below is a list of operations available.
 ```Javascript
 mkdir (path, callback(err));
 write (path, data, options callback(err));
-move (old, new, callback(err));
+move (oldPath, newPath, callback(err));
 remove (path, callback(err));
 
 list (path, callback(err, files));
