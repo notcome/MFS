@@ -38,7 +38,7 @@ stat (path, callback(err, stats));
 ```
 
 ##Restore to a historical version
-Currently it is not implemented, although the file structure supports this function.
+Currently the function is not implemented, although the file structure supports it.
 
 ##How it works?
 MFS is inspired by Apple's *Time Machine* but is much simpler. Each operation will be logged into a log file. The deleted files or the replaced ones will still be kept. To restore to a historical verison, MFS could follow the log's records. There is also a daily backup based on symbolic links.
@@ -80,7 +80,7 @@ Following is an imagined file structure.
 
 ``snapshots`` keeps the snapshots of the repository. In a snapshot there will be a ``MFS.log`` and a ``data`` directory. All files are in the ``data`` directory and are symbolic links refered to ``.MFS``.
 
-``current`` is a symbolic directory refering to the ``data`` directory of the latest snapshot.
+``current`` is a symbolic link refering to the ``data`` directory of the latest snapshot.
 
 Following is a ``MFS.log`` file copied from my test repository.
 
