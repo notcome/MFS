@@ -2,7 +2,7 @@ var fs = require('fs');
 
 function loadMFSLog (filename, options, callback) {
   if (typeof options == 'function')
-    callback = options, options = {'encoding': 'utf8'};
+    callback = options, options = {encoding: 'utf8'};
   fs.readFile(filename, options, function (err, data) {
     if (err) callback(err);
 
@@ -11,7 +11,7 @@ function loadMFSLog (filename, options, callback) {
       if (line == '') return;
       var date = new Date(line.split('|')[0]);
       var cont = line.split('|')[1];
-      logs.push({'date': date, 'content': cont});
+      logs.push({date: date, content: cont});
     });
     callback(null, logs);
   });
@@ -23,7 +23,7 @@ function MFSLog (stream) {
 
 MFSLog.prototype = {
   write: function (data) {
-    stream.write(new Date() + '|' + data + '\n');
+    stream.write(new Date().toUTCString() + '|' + data + '\n');
   }
 }
 

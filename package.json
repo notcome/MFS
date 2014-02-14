@@ -1,9 +1,9 @@
 {
   "name": "mfs",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "author": "Minsheng Liu <notcome@me.com>",
   "description": "A simple persistent file manage system.",
-  "main": "MFS.compiled.js",
+  "main": "MFS.js",
   "repository": {
     "type": "git",
     "url": "https://github.com/notcome/MFS.git"
@@ -17,5 +17,8 @@
   "license": "MIT",
   "engines": {
     "node": ">=0.10"
-  }
+  },
+  "devDependencies": {
+    "async": ">=0.2.10",
+  },
 }
