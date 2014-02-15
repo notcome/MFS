@@ -23,9 +23,9 @@ function MFSLog (stream) {
 
 MFSLog.prototype = {
   write: function (data) {
-    stream.write(new Date().toUTCString() + '|' + data + '\n');
+    this.stream.write(new Date().toUTCString() + '|' + data + '\n');
   }
-}
+};
 
 exports.MFSLog = MFSLog;
 exports.loadMFSLog = loadMFSLog;
