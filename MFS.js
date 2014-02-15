@@ -2,19 +2,16 @@ var fs = require('fs');
 var async = require('async');
 var log = require('./log');
 
-function join (from, to) {
-  for (var key in from)
-    to[key] = from[key];
-}
-
 exports.initMFS = function (path, callback) {
-  mapSeries([path, path + '/.MFS', path + '/snapshots', path + '/.MFS' + date,
-    path + '/snapshots/' + date, path + '/snapshots/' + date + '/data'],
+  var date = getCurrentDate();
+  var repo = new repository(path, date, 0);
+  async.mapSeries([path + '/.MFS', path + '/snapshots', repo.MFS, repo.current, repo.data],
     fs.mkdir, function (err) { 
-      if (err) callback(err);
-      else fs.symlink(data, path + '/current', function (err) {
+      if (err) { callback(err); return; }
+      repo.__createLog();
+      repo.__linkCurrent(function (err) {
         if (err) callback(err);
-        else callback(null, new repository(path, getCurrentDate(), 0));
+        else callback(null, repo);
       });
     });
 };
@@ -26,7 +23,9 @@ exports.reloadMFS = function (path, callback) {
     log.loadMFSLog(path + '/current/MFS.log', function (err, data) {
       if (err) { callback(err); return; }
       this.opno = data.length;
-      callback(null, new repository(path, date, opno));
+      var repo = new repository(path, date, opno);
+      repo.__createLog();
+      return repo;
     })
   });
 };
@@ -44,39 +43,54 @@ repository.prototype = {
     this.date = date, this.opno = opno;
     this.MFS = path + '/.MFS/' + date + '/';
     this.current = path + '/snapshots/' + date + '/';
-    this.data = path + '/snapshots/' + date + '/data/';
+    this.data = current + 'data/';
+  },
+
+  __createLog: function () {
     this.log = new log.MFSLog(fs.createWriteStream(current + 'MFS.log', {flags: 'a', encoding: 'utf8'}));
   },
 
-  backup: function (callback) {
-    var date = getCurrentDate();
+  __linkCurrent: function (callback) {
+    fs.unlink(path + '/current', function (err, exists) {
+      fs.symlink(data, path + '/current', function (err) { callback(err); });
+    });
+  },
+
+  __copy: function (src, dest, callback) {
     var counter = 1;
-    var dest = path + '/snapshots/' + date + '/data/';
     function copy (now, callback) {
-      fs.stat(data + now, function (err, stats) {
+      fs.stat(src + now, function (err, stats) {
         if (stats.isDirectoy()) {
           async.parallel([
             function (callback) { fs.mkdir(dest + now, callback); },
-            function (callback) { fs.readdir(data + now, callback); }],
+            function (callback) { fs.readdir(src + now, callback); }],
             function (err, results) {
               if (err) { callback(err); return; }
               counter += results[1].length - 1;
-              results[1].forEach(function (file)) { copy(now + '/' + file, callback); });
+              results[1].forEach(function (file) { copy(now + '/' + file, callback); });
               if (counter == 0) callback();
             })
         }
-        else fs.link(data + now, dest + now, function (err) {
+        else fs.link(src + now, dest + now, function (err) {
           if (err) { callback(err); return; }
           counter --;
           if (counter == 0) callback();
         });
-      }
-    }
-    async.mapSeries([path + '/.MFS' + date, path + '/snapshots/' + date],
-      fs.mkdir, function(err) {
-        if (err) callback(err);
-        else copy('.', function (err) { callback(err); });
       });
+    }
+    copy('.', function (err) { callback(err); });
+  }
+
+  backup: function (callback) {
+    var date = getCurrentDate();
+    var src = data;
+    __setVars(date, 0);
+    async.map([MFS, current], fs.mkdir, function (err) {
+      if (err) { callback(err); return; }
+      __createLog();
+      async.parallel(__linkCurrent, function (callback) { __copy(src, data, callback); },
+        function (err) { callback(err); });
+    });
   },
 // ---
 // write functions
@@ -166,7 +180,8 @@ function alignDate (value, margin) {
   return str;
 }
 
-function getCurrentDate (D) {
+function getCurrentDate () {
+  var D = new Date();
   var year = D.getUTCFullYear(),
       month = D.getUTCMonth() + 1,
       date = D.getUTCDate() + 1;
