@@ -3,28 +3,40 @@
 ##Overview
 MFS.js is a simple persistent file manage system. It supports files and directories I/O. There is a log system used to keep track of file changes.
 
-As you may notice, it is written with Continuation.js. ``MFS.compiled.js`` is the compiled version.
-
 ##Usage
 This project hasn't been uploaded to ``npm``. You could download it and install locally.
 
-To handle a ``repository``, you need to initiate it firstly. The directory must be empty.
+To handle a ``repository``, you need to either initiate one empty directory or reload an existing one:
 
 ```Javascript
-var mfs = require('mfs');
+var MFS = require('MFS');
 
-//To init a repository.
-var repo1 = mfs.InitStorage('~/Media/MFS');
+MFS.initMFS(newPath, function (err, repo) {
+  if (err) throw err;
+  //do whatever you want:
+  async.series([
+    function (callback) { repo.mkdir('a', callback); },
+    //2rd parameter must be a Buffer
+    function (callback) { repo.write('b.txt', new Buffer('Hello'), callback); },
+    function (callback) { repo.move('b.txt', 'c.txt', callback); },
+    function (callback) { repo.remove('a', callback); }],
+    errorHandler
+  );
+});
+
+MFS.reloadMFS(oldPath, function (err, repo) {
+  if (err) throw err;
+  //do whatever you want.
+  async.parallel([
+    function (callback) { repo.list('a', callback); },
+    function (callback) { repo.read('b.txt', callback); },
+    function (callback) { repo.stat('c.txt', callback); }],
+    dataHandler
+  );
+});
 ```
 
-You could also reload an existing repository.
-
-```Javascript
-//To reload a existing repository.
-var repo2 = mfs.ReloadStorage('~/Novels/MFS');
-```
-
-Below is a list of operations available.
+Below is the list of operations available.
 
 ```Javascript
 mkdir (path, callback(err));
@@ -76,27 +88,19 @@ Following is an imagined file structure.
 -------------
 ```
 
-``.MFS`` is where files are stored. It has many subdirectories classified based on date. A file whose path is ``dir1/dir2/dir3/file`` will be stored with filename ``dir1.dir2.dir3.file.suffix``. Currently the suffix is the opno (operation number).
+``.MFS`` is where files are stored. It has many subdirectories classified based on date. A file whose path is ``dir1/dir2/dir3/file`` will be stored with filename ``dir1.dir2.dir3.file@suffix``. Currently the ``@suffix`` is the opno (operation number).
 
-``snapshots`` keeps the snapshots of the repository. In a snapshot there will be a ``MFS.log`` and a ``data`` directory. All files are in the ``data`` directory and are symbolic links refered to ``.MFS``.
+``snapshots`` keeps the snapshots of the repository. In a snapshot there will be a ``MFS.log`` and a ``data`` directory. All files are in the ``data`` directory and are hard linked to ``.MFS``.
 
 ``current`` is a symbolic link refering to the ``data`` directory of the latest snapshot.
 
 Following is a ``MFS.log`` file copied from my test repository.
 
 ```
-[06:18:15:737] 0 : mkdir IOL-2010
-[06:18:15:738] 1 : mkdir IOL-1234
-[06:18:15:738] 2 : write a.txt
-[06:18:15:739] 3 : write b.txt
-[06:18:15:740] 4 : write c.txt
-[06:18:15:740] 5 : write d.txt
-[06:18:15:741] 6 : write IOL-2010/error
-[06:18:15:741] 7 : write IOL-1234/error
-[06:18:15:742] 8 : remove IOL-1234/error
-[06:18:15:742] 9 : move d.txt IOL-1234/a.txt
-[06:18:15:743] 10 : move IOL-2010 IOL-1234/IOL-2010
-What a good day!
+Sat, 15 Feb 2014 04:48:13 GMT|mkdir::a
+Sat, 15 Feb 2014 04:48:13 GMT|mkdir::a/b
+Sat, 15 Feb 2014 04:48:13 GMT|write::a/c.txt
+Sat, 15 Feb 2014 04:48:13 GMT|move::a/c.txt::a/b/c.txt
 ```
 
 You must be able to understand how it works. I guess that it is not hard to implement the restore function.
